@@ -1,12 +1,11 @@
 import "./styles.css";
 import Item from "../Item";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { idbPromise } from "../../utils/idb";
 
-function Group({ group }) {
+function Group({ group, setUpdateGroups }) {
   const [newItem, setNewItem] = useState({
     name: "",
-    unit: "",
     uses: 0,
     price: 0,
   });
@@ -27,13 +26,27 @@ function Group({ group }) {
     if (!existingItem.length) {
       group.items.push(newItem);
       idbPromise("put", group);
+      setUpdateGroups(true);
     }
     setNewItem({
       name: "",
-      unit: "",
       uses: 0,
       price: 0,
     });
+  };
+
+  const updateItem = (item) => {
+    console.log(item);
+    const updatedItems = group.items.map((groupItem) => {
+      if (groupItem.name === item.name) {
+        console.log("found");
+        console.log(item);
+        return item;
+      }
+      return groupItem;
+    });
+    idbPromise("put", { ...group, items: updatedItems });
+    setUpdateGroups(true);
   };
 
   return (
@@ -42,9 +55,9 @@ function Group({ group }) {
         <thead>
           <tr>
             <th>item</th>
-            <th>units</th>
             <th>price</th>
             <th>uses</th>
+            <th>units</th>
             <th>cost per use</th>
           </tr>
         </thead>
@@ -52,9 +65,12 @@ function Group({ group }) {
           {group.items.length ? (
             group.items.map((item, i) => {
               return (
-                <tr key={i}>
-                  <td key={i}>{item.name}</td>
-                </tr>
+                <Item
+                  item={item}
+                  unit={group.unit}
+                  update={updateItem}
+                  key={i}
+                />
               );
             })
           ) : (
@@ -65,11 +81,19 @@ function Group({ group }) {
       <h3>Add an Item</h3>
       <form style={{ display: "flex", flexDirection: "column" }}>
         <label>Name</label>
-        <input name="name" type="text" onChange={handleChange}></input>
-        <label>Unit</label>
-        <input name="unit" type="text" onChange={handleChange}></input>
+        <input
+          name="name"
+          type="text"
+          value={newItem.name}
+          onChange={handleChange}
+        ></input>
         <label>Price</label>
-        <input name="price" type="number" onChange={handleChange}></input>
+        <input
+          name="price"
+          type="number"
+          value={newItem.price}
+          onChange={handleChange}
+        ></input>
         <button type="submit" onClick={handleSubmit}>
           Add
         </button>
